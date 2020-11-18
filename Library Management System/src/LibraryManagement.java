@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Date;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -86,7 +88,8 @@ public class LibraryManagement {
             System.out.println("2. Search for a movie");
             System.out.println("3. Return a book");
             System.out.println("4. Return a movie");
-            System.out.println("5. Logout");
+            System.out.println("5. Delete your account");
+            System.out.println("6. Logout");
 
             int input = sc.nextInt();
             sc.nextLine();
@@ -105,6 +108,10 @@ public class LibraryManagement {
                     returnMovie();
                     break;
                 case 5:
+                    if(deleteAccount())
+                        running = false;
+                    break;
+                case 6:
                     logout();
                     running = false;
                     break;
@@ -253,36 +260,35 @@ public class LibraryManagement {
 
     static void returnBook() {
         List<Book> checkedOutBooks = checkedOutBooksDB();
-        if(checkedOutBooks.size() == 0){
+        if (checkedOutBooks.size() == 0) {
             System.out.println("You do not currently have any books checked out.");
             return;
         }
         System.out.println("You currently have checked out the following books: ");
 
-        for(int i=0; i<checkedOutBooks.size(); i++){
+        for (int i = 0; i < checkedOutBooks.size(); i++) {
             Book book = checkedOutBooks.get(i);
             String title = book.getTitle();
             LocalDate checkOutDate = book.getCheckOutDate();
             LocalDate dueDate = book.getDueDate();
-            System.out.println((i+1) + ") " + title);
+            System.out.println((i + 1) + ") " + title);
             System.out.print("\tChecked out on " + checkOutDate + "\tDue on " + dueDate + "\n");
         }
 
         System.out.println("Enter the number of the book you want to return, or 'q' if you want to go back.");
         String input = sc.nextLine();
-        try{
+        try {
             int toReturn = Integer.parseInt(input) - 1;
             Book book = checkedOutBooks.get(toReturn);
             dbReturnBook(book);
 
             System.out.println("You have successfully returned " + book.getTitle() + ".");
-        }
-        catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
     }
 
-    static void dbReturnBook(Book book){
+    static void dbReturnBook(Book book) {
         Statement stmt = null;
 
         try {
@@ -296,44 +302,42 @@ public class LibraryManagement {
             stmt.close();
 
             System.out.println("You have successfully returned '" + book.getTitle() + "'.");
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             System.out.println("Invalid input");
         }
     }
 
     static void returnMovie() {
         List<Movie> checkedOutMovies = checkedOutMoviesDB();
-        if(checkedOutMovies.size() == 0){
+        if (checkedOutMovies.size() == 0) {
             System.out.println("You do not currently have any movies checked out.");
             return;
         }
         System.out.println("You currently have checked out the following movies: ");
 
-        for(int i=0; i<checkedOutMovies.size(); i++){
+        for (int i = 0; i < checkedOutMovies.size(); i++) {
             Movie movie = checkedOutMovies.get(i);
             String title = movie.getTitle();
             LocalDate checkOutDate = movie.getCheckOutDate();
             LocalDate dueDate = movie.getDueDate();
-            System.out.println((i+1) + ") " + title);
+            System.out.println((i + 1) + ") " + title);
             System.out.print("\tChecked out on " + checkOutDate + "\tDue on " + dueDate + "\n");
         }
 
         System.out.println("Enter the number of the movie you want to return, or 'q' if you want to go back.");
         String input = sc.nextLine();
-        try{
+        try {
             int toReturn = Integer.parseInt(input) - 1;
             Movie movie = checkedOutMovies.get(toReturn);
             dbReturnMovie(movie);
 
             System.out.println("You have successfully returned " + movie.getTitle() + ".");
-        }
-        catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
     }
 
-    static void dbReturnMovie(Movie movie){
+    static void dbReturnMovie(Movie movie) {
         Statement stmt = null;
 
         try {
@@ -347,13 +351,12 @@ public class LibraryManagement {
             stmt.close();
 
             System.out.println("You have successfully returned '" + movie.getTitle() + "'.");
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             System.out.println("Invalid input");
         }
     }
 
-    static List<Book> checkedOutBooksDB(){
+    static List<Book> checkedOutBooksDB() {
         Statement stmt = null;
 
         List<Book> books = new ArrayList<>();
@@ -381,8 +384,7 @@ public class LibraryManagement {
 
             rs.close();
             stmt.close();
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
@@ -390,7 +392,7 @@ public class LibraryManagement {
         return books;
     }
 
-    static List<Movie> checkedOutMoviesDB(){
+    static List<Movie> checkedOutMoviesDB() {
         Statement stmt = null;
 
         List<Movie> movies = new ArrayList<>();
@@ -418,8 +420,7 @@ public class LibraryManagement {
 
             rs.close();
             stmt.close();
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
@@ -481,7 +482,7 @@ public class LibraryManagement {
         //db call to find book by title
         HashMap<String, Books> books = dbBookSearch(1, searchTitle);
 
-        if(books.isEmpty()){
+        if (books.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -498,7 +499,7 @@ public class LibraryManagement {
         //db call to find book by author
         HashMap<String, Books> books = dbBookSearch(2, searchAuthor);
 
-        if(books.isEmpty()){
+        if (books.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -515,7 +516,7 @@ public class LibraryManagement {
         //db call to find book by genre
         HashMap<String, Books> books = dbBookSearch(3, searchGenre);
 
-        if(books.isEmpty()){
+        if (books.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -532,7 +533,7 @@ public class LibraryManagement {
         //db call to find book by isbn
         HashMap<String, Books> books = dbBookSearch(4, searchISBN);
 
-        if(books.isEmpty()){
+        if (books.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -593,14 +594,13 @@ public class LibraryManagement {
                         ISBN, checkedOutBy, genreCode);
 
                 String keyStr = ISBN + "###" + format;
-                if(bookMap.containsKey(keyStr)){
+                if (bookMap.containsKey(keyStr)) {
                     bookMap.get(keyStr).addBook();
-                    if(checkOutDate != null)
+                    if (checkOutDate != null)
                         bookMap.get(keyStr).addCheckedOut();
-                }
-                else{
+                } else {
                     bookMap.put(keyStr, new Books(book));
-                    if(checkOutDate != null)
+                    if (checkOutDate != null)
                         bookMap.get(keyStr).addCheckedOut();
                 }
             }
@@ -616,11 +616,11 @@ public class LibraryManagement {
         return bookMap;
     }
 
-    static HashMap<Integer, Book> generateBookDisplayOrder(HashMap<String, Books> books){
+    static HashMap<Integer, Book> generateBookDisplayOrder(HashMap<String, Books> books) {
         HashMap<Integer, Book> displayOrder = new HashMap<>();
 
         int index = 1;
-        for(Map.Entry<String, Books> entry : books.entrySet()){
+        for (Map.Entry<String, Books> entry : books.entrySet()) {
             Books copies = entry.getValue();
             Book book = copies.getBook();
             System.out.println("\nBook " + index + ":");
@@ -636,15 +636,18 @@ public class LibraryManagement {
         return displayOrder;
     }
 
-    static void checkoutBook(HashMap<Integer, Book> books){
+    static void checkoutBook(HashMap<Integer, Book> books) {
+        if (!canCheckOut())
+            return;
+
         System.out.println("Enter the number of the book you want to check out, or 'q' if you want to go back.");
         String input = sc.nextLine();
-        try{
+        try {
             int toCheckout = Integer.parseInt(input);
             Book book = books.get(toCheckout);
             int userAge = signedInUser.getAge();
             boolean isAdult = book.getIsAdult();
-            if(isAdult && userAge < 18){
+            if (isAdult && userAge < 18) {
                 System.out.println("You must be at least 18 to check out " + book.getTitle());
                 return;
             }
@@ -655,14 +658,14 @@ public class LibraryManagement {
             Calendar calendar = Calendar.getInstance();
             calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
             java.util.Date date = calendar.getTime();
-            System.out.println("It is due on " + date);
-        }
-        catch(NumberFormatException e){
+            DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
+            System.out.println("It is due on " + dFormat.format(date) + "\n");
+        } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
     }
 
-    static void dbCheckoutBook(Book book){
+    static void dbCheckoutBook(Book book) {
         Statement stmt = null;
 
         try {
@@ -685,8 +688,7 @@ public class LibraryManagement {
                     " WHERE bookID = '" + bookID + "';";
             stmt.executeUpdate(sql);
             stmt.close();
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
@@ -699,7 +701,7 @@ public class LibraryManagement {
         //db call to find book by title
         HashMap<String, Movies> movies = dbMovieSearch(1, searchTitle);
 
-        if(movies.isEmpty()){
+        if (movies.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -716,7 +718,7 @@ public class LibraryManagement {
         //db call to find book by title
         HashMap<String, Movies> movies = dbMovieSearch(2, searchGenre);
 
-        if(movies.isEmpty()){
+        if (movies.isEmpty()) {
             System.out.println("No results found.");
             return;
         }
@@ -766,14 +768,13 @@ public class LibraryManagement {
                 Movie movie = new Movie(movieID, title, checkOutDate2, dueDate2, format, isAdult, year, rating, checkedOutBy, genreCode);
 
                 String keyStr = title + "###" + format;
-                if(movieMap.containsKey(keyStr)){
+                if (movieMap.containsKey(keyStr)) {
                     movieMap.get(keyStr).addMovie();
-                    if(checkOutDate != null)
+                    if (checkOutDate != null)
                         movieMap.get(keyStr).addCheckedOut();
-                }
-                else{
+                } else {
                     movieMap.put(keyStr, new Movies(movie));
-                    if(checkOutDate != null)
+                    if (checkOutDate != null)
                         movieMap.get(keyStr).addCheckedOut();
                 }
             }
@@ -789,11 +790,11 @@ public class LibraryManagement {
         return movieMap;
     }
 
-    static HashMap<Integer, Movie> generateMovieDisplayOrder(HashMap<String, Movies> movies){
+    static HashMap<Integer, Movie> generateMovieDisplayOrder(HashMap<String, Movies> movies) {
         HashMap<Integer, Movie> displayOrder = new HashMap<>();
 
         int index = 1;
-        for(Map.Entry<String, Movies> entry : movies.entrySet()){
+        for (Map.Entry<String, Movies> entry : movies.entrySet()) {
             Movies copies = entry.getValue();
             Movie movie = copies.getMovie();
             System.out.println("\nMovie " + index + ":");
@@ -809,15 +810,18 @@ public class LibraryManagement {
         return displayOrder;
     }
 
-    static void checkoutMovie(HashMap<Integer, Movie> movies){
+    static void checkoutMovie(HashMap<Integer, Movie> movies) {
+        if (!canCheckOut())
+            return;
+
         System.out.println("Enter the number of the movie you want to check out, or 'q' if you want to go back.");
         String input = sc.nextLine();
-        try{
+        try {
             int toCheckout = Integer.parseInt(input);
             Movie movie = movies.get(toCheckout);
             int userAge = signedInUser.getAge();
             String rating = movie.getRating();
-            if((rating.equals("R") || rating.equals("NC-17")) && userAge < 17){
+            if ((rating.equals("R") || rating.equals("NC-17")) && userAge < 17) {
                 System.out.println("You must be at least 17 to check out " + movie.getTitle());
                 return;
             }
@@ -828,14 +832,14 @@ public class LibraryManagement {
             Calendar calendar = Calendar.getInstance();
             calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
             java.util.Date date = calendar.getTime();
-            System.out.println("It is due on " + date);
-        }
-        catch(NumberFormatException e){
+            DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
+            System.out.println("It is due on " + dFormat.format(date) + "\n");
+        } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
     }
 
-    static void dbCheckoutMovie(Movie movie){
+    static void dbCheckoutMovie(Movie movie) {
         Statement stmt = null;
 
         try {
@@ -858,10 +862,161 @@ public class LibraryManagement {
                     " WHERE movieID = '" + movieID + "';";
             stmt.executeUpdate(sql);
             stmt.close();
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
+    }
+
+    static boolean canCheckOut() {
+        boolean canCheckOut = true;
+
+        System.out.println();
+        if (exceededMaxCheckedOutItems()) {
+            System.out.println("\nYou have currently checked out 15 total items. You must return at least one before you check out another.\n");
+            canCheckOut = false;
+        }
+        List<Item> overdueTitles = getOverdueTitles();
+        if (!overdueTitles.isEmpty()) {
+            System.out.println("The following item(s) are overdue and must be returned before you can check out anymore.");
+            for (Item item : overdueTitles) {
+                System.out.println(item.getType() + ": " + item.getTitle());
+            }
+            canCheckOut = false;
+        }
+        System.out.println();
+
+        return canCheckOut;
+    }
+
+    static boolean exceededMaxCheckedOutItems() {
+        Statement stmt = null;
+        int count = 0;
+
+        try {
+            long cardNum = signedInUser.getCardNumber();
+            String sql = "SELECT " +
+                    "(SELECT COUNT(*) " +
+                    "FROM Book " +
+                    "WHERE checkedOutBy = '" + cardNum + "') + " +
+                    "(SELECT COUNT(*) " +
+                    "FROM Movie " +
+                    "WHERE checkedOutBy = '" + cardNum + "') AS totalCheckedOut;";
+
+            // create query
+            stmt = dbConnection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+
+            while (rs.next()) {
+                count = rs.getInt("totalCheckedOut");
+                break; //there should only be one row
+            }
+            rs.close();
+
+            stmt.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return (count >= 15);
+    }
+
+    static List<Item> getOverdueTitles() {
+        Statement stmt = null;
+        int count = 0;
+
+        List<Item> overdueItems = new ArrayList<>();
+        try {
+            long cardNum = signedInUser.getCardNumber();
+            String sql = "SELECT title," +
+                    "    'Book' AS itemType " +
+                    "FROM Book " +
+                    "WHERE checkedOutBy = '" + cardNum + "' " +
+                    "AND dueDate <= CURRENT_DATE - 1 " +
+                    "UNION " +
+                    "SELECT title, " +
+                    "    'Movie' AS itemType " +
+                    "FROM Movie " +
+                    "WHERE checkedOutBy = '" + cardNum + "' " +
+                    "AND dueDate <= CURRENT_DATE - 1 " +
+                    "ORDER BY itemType ASC, title ASC;";
+
+            // create query
+            stmt = dbConnection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+
+            while (rs.next()) {
+                String title = rs.getString("title");
+                String type = rs.getString("itemType");
+                Item item = new Item(title, type);
+                overdueItems.add(item);
+            }
+            rs.close();
+
+            stmt.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return overdueItems;
+    }
+
+    static boolean deleteAccount() {
+        boolean deleted = false;
+
+        System.out.println("Are you sure you want to delete your account? This cannot be undone.");
+        System.out.println("\t1. Yes");
+        System.out.println("\t2. No");
+        String input = sc.nextLine();
+        try {
+            int choice = Integer.parseInt(input);
+            if (choice == 1) {
+                if(deleteAccountDB()){
+                    System.out.println("Your account has been deleted and all items have been returned.");
+                    signedInUser = null;
+                    deleted = true;
+                }
+                else {
+                    System.out.println("Something went wrong. Your account has not been deleted. Try again later.");
+                }
+            }
+        } catch (Exception e) {
+            //return to menu
+        }
+
+        return deleted;
+    }
+
+    static boolean deleteAccountDB() {
+        Statement stmt = null;
+        boolean deleted = false;
+        try {
+            stmt = dbConnection.createStatement();
+
+            long cardNum = signedInUser.getCardNumber();
+            String sql = "UPDATE Book SET checkedOutBy = NULL, " +
+                    "checkOutDate = NULL, dueDate = NULL WHERE " +
+                    "checkedOutBy = '" + cardNum + "';";
+            stmt.executeUpdate(sql);
+
+            sql = "UPDATE Movie SET checkedOutBy = NULL, " +
+                    "checkOutDate = NULL, dueDate = NULL WHERE " +
+                    "checkedOutBy = '" + cardNum + "';";
+            stmt.executeUpdate(sql);
+
+            sql = "DELETE FROM Card WHERE cardNumber= '" + cardNum + "';";
+            stmt.executeUpdate(sql);
+
+            stmt.close();
+
+            deleted = true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return deleted;
     }
 }
