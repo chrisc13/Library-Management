@@ -252,8 +252,12 @@ public class LibraryManagement {
     }
 
     static void returnBook() {
-        System.out.println("You currently have checked out the following books: ");
         List<Book> checkedOutBooks = checkedOutBooksDB();
+        if(checkedOutBooks.size() == 0){
+            System.out.println("You do not currently have any books checked out.");
+            return;
+        }
+        System.out.println("You currently have checked out the following books: ");
 
         for(int i=0; i<checkedOutBooks.size(); i++){
             Book book = checkedOutBooks.get(i);
@@ -299,8 +303,12 @@ public class LibraryManagement {
     }
 
     static void returnMovie() {
-        System.out.println("You currently have checked out the following movies: ");
         List<Movie> checkedOutMovies = checkedOutMoviesDB();
+        if(checkedOutMovies.size() == 0){
+            System.out.println("You do not currently have any movies checked out.");
+            return;
+        }
+        System.out.println("You currently have checked out the following movies: ");
 
         for(int i=0; i<checkedOutMovies.size(); i++){
             Movie movie = checkedOutMovies.get(i);
@@ -834,7 +842,7 @@ public class LibraryManagement {
             // create query
             stmt = dbConnection.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT * FROM Movie " +
-                    "WHERE ISBN = '" + movie.getTitle() +
+                    "WHERE title = '" + movie.getTitle() +
                     "' AND format = '" + movie.getFormat() +
                     "' AND checkedOutBy IS NULL;");
 
