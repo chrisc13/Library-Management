@@ -3,10 +3,15 @@ public class Cardholder {
     private String cardHolderID;
     private String name;
     private int age;
-    private String cardNumber;
-    
-    
-    public Cardholder(String cHolder, String n, int a, String cardNum ) {
+    private long cardNumber;
+
+    public Cardholder(String n, int a, long cardNum ) {
+        name=n;
+        age=a;
+        cardNumber=cardNum;
+    }
+
+    public Cardholder(String cHolder, String n, int a, long cardNum ) {
         cardHolderID=cHolder;
         name=n;
         age=a;
@@ -41,15 +46,15 @@ public class Cardholder {
     
     
     
-    public String getCardNumber() {
+    public long getCardNumber() {
         return  cardNumber;
     }
 
-    public void setCardNumber(String cNum) {
+    public void setCardNumber(long cNum) {
         cardNumber=cNum;
     }
-    
-    
+
+
     
     
 
