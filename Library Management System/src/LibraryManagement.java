@@ -2,474 +2,866 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 
 public class LibraryManagement {
-	static Scanner sc = new Scanner(System.in);
-	static Connection dbConnection = null;
-	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		if (isConnectedToDb()) {
-			boolean running = true;
-			do {
-				int input = welcomeScreen();
+    static Scanner sc = new Scanner(System.in);
+    static Connection dbConnection = null;
 
-				switch (input) {
-				case 1:
-					signInScreen();
-					break;
-				case 2:
-					registerScreen();
-					break;
-				case 3:
-					System.out.println("Program ended.");
-					running = false;
-					break;
-				default:
-					System.out.println("Invalid input.");
-					break;
-				}
-			} while (running);
+    public static Cardholder signedInUser = null; //the card number of the user that is signed in
 
-		}else {
-			 System.exit(0);
-		}
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+        if (isConnectedToDb()) {
+            boolean running = true;
+            do {
+                int input = welcomeScreen();
 
-	}
-	static boolean isConnectedToDb() {
+                switch (input) {
+                    case 1:
+                        signInScreen();
+                        break;
+                    case 2:
+                        registerScreen();
+                        break;
+                    case 3:
+                        System.out.println("Program ended.");
+                        closeConnection();
+                        running = false;
+                        break;
+                    default:
+                        System.out.println("Invalid input.");
+                        break;
+                }
+            } while (running);
+
+        } else {
+            System.exit(0);
+        }
+
+    }
+
+    static boolean isConnectedToDb() {
         try {
-        	dbConnection = DriverManager
+            dbConnection = DriverManager
                     .getConnection("jdbc:postgresql://localhost:8888/alex",
                             "alex", "");
-           
+
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println(e.getClass().getName()+": "+e.getMessage());
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
             return false;
         }
         return true;
-	}
-	
-	
-    static int welcomeScreen(){
+    }
+
+    static void closeConnection() {
+        try {
+            dbConnection.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    static int welcomeScreen() {
         System.out.println("\tWelcome to The Library.");
         System.out.println("(Please enter 1, 2 or 3 to select an option)");
         System.out.println("\n1. Sign in to your account");
         System.out.println("2. Register a new account");
         System.out.println("3. Quit program");
-        
+
         String input = sc.nextLine();
         return Integer.parseInt(input);
     }
-    
-    static void menu(String name){
-    	System.out.println("\nWelcome back " +name +", would you like to: ");
-    	boolean running = true;
-    	do {
-    		 System.out.println("1. Search for a book");
-    	     System.out.println("2. Search for a movie");
-    	     System.out.println("3. View your checked out items");
-    	     System.out.println("4. Return an item");
-    	     System.out.println("5. Logout");	
-    		
-    		int input = sc.nextInt();
-    		
-    		switch (input) {
-    		case 1:
-    			bookSearch();
-    			break;
-    		case 2:
-    			movieSearch();
-    			break;
-    		case 3:
-    			checkedOut();
-    			break;
-    		case 4:
-    			returnItem();
-    			break;
-    		case 5: 
-    			logout();
-    			running = false;
-    			break;
-    		default:
-    			System.out.println("Invalid input.");
-    			break;
-    		}
-    		
-    	}while(running);
-    	
- 
+
+    static void menu() {
+        System.out.println("\nWelcome back, " + signedInUser.getName() + " (Card no. " + signedInUser.getCardNumber() + ")\nWould you like to: ");
+        boolean running = true;
+        do {
+            System.out.println("1. Search for a book");
+            System.out.println("2. Search for a movie");
+            System.out.println("3. Return a book");
+            System.out.println("4. Return a movie");
+            System.out.println("5. Logout");
+
+            int input = sc.nextInt();
+            sc.nextLine();
+
+            switch (input) {
+                case 1:
+                    bookSearch();
+                    break;
+                case 2:
+                    movieSearch();
+                    break;
+                case 3:
+                    returnBook();
+                    break;
+                case 4:
+                    returnMovie();
+                    break;
+                case 5:
+                    logout();
+                    running = false;
+                    break;
+                default:
+                    System.out.println("Invalid input.");
+                    break;
+            }
+
+        } while (running);
+
+
     }
-    
+
     private static void logout() {
-		// TODO Auto-generated method stub
-    	
-    	try {
-    		dbConnection.close();
-			System.out.println("Logged out");
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
-    
-	static void signInScreen(){
-    	System.out.println("\tSign In Screen.");
-        System.out.println("\nEnter your card number: ");
-        String cardNumber = sc.nextLine();
+        signedInUser = null;
+        System.out.println("Logged out");
+    }
+
+    static void signInScreen() {
+        System.out.println("\n\tLog In");
+        System.out.print("Enter your card number: ");
+        long cardNumber = sc.nextLong();
+        sc.nextLine();
         System.out.print("Enter your pin: ");
         int pin = sc.nextInt();
-        
-        
+        sc.nextLine();
+
+
         //make db call and handle response
         Cardholder cardHolder = dbSignIn(cardNumber, pin);
         if (cardHolder != null) {
-            String name = cardHolder.getName();
-            
+            signedInUser = cardHolder;
+
             //show the main menu
-            menu(name);
-        }else {
-        	System.out.println("Invalid credentials.");
+            menu();
+        } else {
+            System.out.println("Invalid credentials.");
         }
-        
+
 
     }
 
-    static void registerScreen(){
-    	System.out.println("\tRegister Screen.");
-        System.out.print("\nEnter your full name: ");
+    static void registerScreen() {
+        System.out.println("\n\n\tAccount Registration");
+        System.out.print("Enter your full name: ");
         String name = sc.nextLine();
-       
+
         if (!name.isEmpty()) {
-        	 System.out.print("Enter your age: ");
-             int age = sc.nextInt();
-             if (age != 0) {
-                 System.out.print("Enter a 4-digit numeric pin: ");
-                 String pinString = sc.nextLine();
-                if (pinString.length() > 3) {
-                	System.out.println("Re-enter your pin: ");
-                	String confirmPin = sc.nextLine();
-                	if (pinString.equals(confirmPin)) {
-                		//make the db call to register here 
-                		String cardNumber = generateID();
-                		String cardHolderID = generateID();
-                		LocalDate date = LocalDate.now();
-                		int pinInt = Integer.parseInt(pinString);
-                		Card card = new Card(cardNumber, pinInt, date);
-                		Cardholder cardHolder = new Cardholder(cardHolderID, name, age, cardNumber);
-                		
-                		if (dbRegister(card, cardHolder)) {
-                			System.out.println("Register SUCCESS. Returning to Welcome Screen.");
-                		}else {
-                			System.out.println("Register FAIL. Returning to Welcome Screen.");
-                		}
-                		
-                		
-                	}else {
-                		System.out.println("Pin does not match.");
-                	}
-                }else {
-                	System.out.println("Pin length invlaid.");
+            System.out.print("Enter your age: ");
+            int age = sc.nextInt();
+            sc.nextLine();
+            if (age != 0) {
+                System.out.print("Enter a 4-digit numeric pin: ");
+                int pin1 = sc.nextInt();
+                sc.nextLine();
+                if (String.valueOf(pin1).length() == 4) {
+                    System.out.print("Re-enter your pin: ");
+                    int pin2 = sc.nextInt();
+                    sc.nextLine();
+                    if (pin1 == pin2) {
+                        //make the db call to register here
+                        LocalDate date = LocalDate.now();
+                        Card card = new Card(pin1, date);
+                        Cardholder cardHolder = new Cardholder(name, age, card.getCardNumber());
+
+                        if (dbRegister(card, cardHolder)) {
+                            System.out.println("Registration successful! Your new library card number is " + card.getCardNumber() + ". Write this down for your records.");
+                            menu();
+                        } else {
+                            System.out.println("Register FAIL. Returning to Welcome Screen.");
+                        }
+
+
+                    } else {
+                        System.out.println("Pin does not match.");
+                    }
+                } else {
+                    System.out.println("Pin length invlaid.");
                 }
-             }
-            
-       
-        }else {
-        	System.out.println("Empty name kid. Returning to Welcome Screen.");
+            }
+
+
+        } else {
+            System.out.println("You did not enter a name. Returning to Welcome Screen.");
         }
-        
-
-    }
-    
- 
-	static String generateID() {
-    	UUID uuid = UUID.randomUUID();
-		return uuid.toString();
     }
 
-    
     static boolean dbRegister(Card card, Cardholder cardHolder) {
-    	
+
         Statement stmt = null;
         try {
             //create query
             stmt = dbConnection.createStatement();
             //query to insert card
             String sql = "INSERT INTO Card (cardNumber, pin, issueDate)\n"
-            		+ "VALUES ("+card.getCardNumber() +", " +card.getPin() +", "+card.getDate()+");";
+                    + "VALUES ('" + card.getCardNumber() + "', " + card.getPin() + ", '" + card.getDate() + "');";
             stmt.executeUpdate(sql);
             //query to insert cardholder
             sql = "INSERT INTO Cardholder (name, age, cardNumber)\n"
-            		+ "VALUES (" +cardHolder.getName() +", " +cardHolder.getAge() +", " +cardHolder.getCardNumber()+");"; 
+                    + "VALUES ('" + cardHolder.getName() + "', " + cardHolder.getAge() + ", '" + cardHolder.getCardNumber() + "');";
             stmt.executeUpdate(sql);
             stmt.close();
-           
+            signedInUser = cardHolder;
         } catch (Exception e) {
 
             e.printStackTrace();
-            System.err.println(e.getClass().getName()+": "+e.getMessage());
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
             return false;
         }
-        
+
         return true;
-    	
     }
 
-    static Cardholder dbSignIn(String cardNumber, int pin) {
-    	Cardholder cardHolder = null;
+    static Cardholder dbSignIn(long cardNumber, int pin) {
+        Cardholder cardHolder = null;
         Statement stmt = null;
         try {
             //create query
             stmt = dbConnection.createStatement();
-            ResultSet rs = stmt.executeQuery( "SELECT * FROM Cardholder\n"
-            		+ "NATURAL JOIN Card\n"
-            		+ "WHERE Card.cardNumber = "+cardNumber
-            		+ "AND pin = " +pin +";" );
-            
-            
-            if ( rs.first() ) {
-            	//String cardHolderID = rs.getString("");
-            	String name = rs.getString("name");
-            	int age = rs.getInt("age");
-            	cardNumber = rs.getString("cardNumber");
-            	
-            	cardHolder = new Cardholder(null, name, age, cardNumber);  
-            	
+            ResultSet rs = stmt.executeQuery("SELECT cardHolderID, name, age FROM Cardholder "
+                    + "NATURAL JOIN Card "
+                    + "WHERE cardNumber = '" + cardNumber
+                    + "' AND pin = '" + pin + "';");
+
+
+            while (rs.next()) {
+                String cardHolderID = rs.getString("cardHolderID");
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+
+                cardHolder = new Cardholder(cardHolderID, name, age, cardNumber);
+                break;  //there should only be one result from the select query
             }
             rs.close();
             stmt.close();
-            
+
         } catch (Exception e) {
 
             e.printStackTrace();
-            System.err.println(e.getClass().getName()+": "+e.getMessage());
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
             return null;
         }
-        
+
         return cardHolder;
     }
-    
-  
-	static void returnItem(){
-//        System.out.println("You currently have checked out the following: ");
-//        System.out.println("\tChecked out on 9/1/20\tDue on 9/15/10");
-//        System.out.println("\tChecked out on 9/7/20\tDue on 9/21/10");
-//        System.out.println("Enter the number of the item you want to return or enter 0 to go back");
-//        sc.nextLine();
-//        System.out.println("You are trying to return Inception. Type Y to confirm or N to cancel");
-//        sc.nextLine();
-//        System.out.println("You have successfully returned Inception\n");
-//        sc.nextLine();
-//        System.out.println("You currently have checked out the following: ");
-//        System.out.println("\tChecked out on 9/1/20\tDue on 9/15/10");
-//        System.out.println("\tChecked out on 9/7/20\tDue on 9/21/10");
-//        System.out.println("Enter the number of the item you want to return or enter 0 to go back");
-        sc.nextLine();
+
+    static void returnBook() {
+        List<Book> checkedOutBooks = checkedOutBooksDB();
+        if(checkedOutBooks.size() == 0){
+            System.out.println("You do not currently have any books checked out.");
+            return;
+        }
+        System.out.println("You currently have checked out the following books: ");
+
+        for(int i=0; i<checkedOutBooks.size(); i++){
+            Book book = checkedOutBooks.get(i);
+            String title = book.getTitle();
+            LocalDate checkOutDate = book.getCheckOutDate();
+            LocalDate dueDate = book.getDueDate();
+            System.out.println((i+1) + ") " + title);
+            System.out.print("\tChecked out on " + checkOutDate + "\tDue on " + dueDate + "\n");
+        }
+
+        System.out.println("Enter the number of the book you want to return, or 'q' if you want to go back.");
+        String input = sc.nextLine();
+        try{
+            int toReturn = Integer.parseInt(input) - 1;
+            Book book = checkedOutBooks.get(toReturn);
+            dbReturnBook(book);
+
+            System.out.println("You have successfully returned " + book.getTitle() + ".");
+        }
+        catch(NumberFormatException e){
+            //user did not enter a number and wants to go back, do nothing
+        }
     }
 
-    static void checkedOut(){
-//        System.out.println("You currently have checked out the following: ");
-//        System.out.println("\tChecked out on 9/1/20\tDue on 9/15/10");
-//        System.out.println("\tChecked out on 9/7/20\tDue on 9/21/10");
-//        System.out.println("Press any key to go back");
-        sc.nextLine();
+    static void dbReturnBook(Book book){
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+
+            String sql = "UPDATE Book SET checkedOutBy = NULL, " +
+                    "checkOutDate = NULL, dueDate = NULL WHERE " +
+                    "bookID = '" + book.getBookID() + "';";
+            stmt.executeUpdate(sql);
+            stmt.close();
+
+            System.out.println("You have successfully returned '" + book.getTitle() + "'.");
+        }
+        catch(Exception e){
+            System.out.println("Invalid input");
+        }
     }
 
+    static void returnMovie() {
+        List<Movie> checkedOutMovies = checkedOutMoviesDB();
+        if(checkedOutMovies.size() == 0){
+            System.out.println("You do not currently have any movies checked out.");
+            return;
+        }
+        System.out.println("You currently have checked out the following movies: ");
 
-    static void movieSearch(){
-        System.out.println("Please select an option");
+        for(int i=0; i<checkedOutMovies.size(); i++){
+            Movie movie = checkedOutMovies.get(i);
+            String title = movie.getTitle();
+            LocalDate checkOutDate = movie.getCheckOutDate();
+            LocalDate dueDate = movie.getDueDate();
+            System.out.println((i+1) + ") " + title);
+            System.out.print("\tChecked out on " + checkOutDate + "\tDue on " + dueDate + "\n");
+        }
+
+        System.out.println("Enter the number of the movie you want to return, or 'q' if you want to go back.");
+        String input = sc.nextLine();
+        try{
+            int toReturn = Integer.parseInt(input) - 1;
+            Movie movie = checkedOutMovies.get(toReturn);
+            dbReturnMovie(movie);
+
+            System.out.println("You have successfully returned " + movie.getTitle() + ".");
+        }
+        catch(NumberFormatException e){
+            //user did not enter a number and wants to go back, do nothing
+        }
+    }
+
+    static void dbReturnMovie(Movie movie){
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+
+            String sql = "UPDATE Movie SET checkedOutBy = NULL, " +
+                    "checkOutDate = NULL, dueDate = NULL WHERE " +
+                    "movieID = '" + movie.getMovieID() + "';";
+            stmt.executeUpdate(sql);
+            stmt.close();
+
+            System.out.println("You have successfully returned '" + movie.getTitle() + "'.");
+        }
+        catch(Exception e){
+            System.out.println("Invalid input");
+        }
+    }
+
+    static List<Book> checkedOutBooksDB(){
+        Statement stmt = null;
+
+        List<Book> books = new ArrayList<>();
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+
+            String sql = "SELECT bookID," +
+                    "    title," +
+                    "    checkOutDate," +
+                    "    dueDate" +
+                    " FROM Book" +
+                    " WHERE checkedOutBy = '" + signedInUser.getCardNumber() + "';";
+
+            ResultSet rs = stmt.executeQuery(sql);
+
+            while (rs.next()) {
+                String bookID = rs.getString("bookID");
+                String title = rs.getString("title");
+                LocalDate checkOutDate = ((java.sql.Date) rs.getDate("checkOutDate")).toLocalDate();
+                LocalDate dueDate = ((java.sql.Date) rs.getDate("dueDate")).toLocalDate();
+
+                books.add(new Book(bookID, title, checkOutDate, dueDate));
+            }
+
+            rs.close();
+            stmt.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return books;
+    }
+
+    static List<Movie> checkedOutMoviesDB(){
+        Statement stmt = null;
+
+        List<Movie> movies = new ArrayList<>();
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+
+            String sql = "SELECT movieID," +
+                    "    title," +
+                    "    checkOutDate," +
+                    "    dueDate" +
+                    " FROM Movie" +
+                    " WHERE checkedOutBy = '" + signedInUser.getCardNumber() + "';";
+
+            ResultSet rs = stmt.executeQuery(sql);
+
+            while (rs.next()) {
+                String movieID = rs.getString("movieID");
+                String title = rs.getString("title");
+                LocalDate checkOutDate = ((java.sql.Date) rs.getDate("checkOutDate")).toLocalDate();
+                LocalDate dueDate = ((java.sql.Date) rs.getDate("dueDate")).toLocalDate();
+
+                movies.add(new Movie(movieID, title, checkOutDate, dueDate));
+            }
+
+            rs.close();
+            stmt.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return movies;
+    }
+
+    static void movieSearch() {
+        System.out.println("\nPlease select an option");
         System.out.println("\t1) Search by title");
         System.out.println("\t2) Search by genre");
         System.out.println("\t3) Go back");
         int choice = sc.nextInt();
+        sc.nextLine();
         switch (choice) {
-    	case 1: 
-    		movieSearchByTitle();
-    		break;
-    	case 2: 
-    		movieSearchByGenre();
-    		break;
-    	case 3:
-    		return;
-    	
+            case 1:
+                movieSearchByTitle();
+                break;
+            case 2:
+                movieSearchByGenre();
+                break;
+            case 3:
+                return;
+
         }
     }
 
-
-    static void bookSearch(){
-        System.out.println("Please select an option");
+    static void bookSearch() {
+        System.out.println("\nPlease select an option");
         System.out.println("\t1) Search by title");
         System.out.println("\t2) Search by author");
         System.out.println("\t3) Search by genre");
-        System.out.println("\t4) Search by ISBN");
+        System.out.println("\t4) Search by ISBN-13");
         System.out.println("\t5) Go back");
-        int choice  = sc.nextInt();
+        int choice = sc.nextInt();
+        sc.nextLine();
         switch (choice) {
-        	case 1: 
-        		bookSearchByTitle();
-        		break;
-        	case 2: 
-        		bookSearchByAuthor();
-        		break;
-        	case 3:	
-        		bookSearchByGenre();
-        		break;
-        	case 4:
-        		bookSearchByISBN();
-        		break;
-        	case 5:
-        		return;
-        	
+            case 1:
+                bookSearchByTitle();
+                break;
+            case 2:
+                bookSearchByAuthor();
+                break;
+            case 3:
+                bookSearchByGenre();
+                break;
+            case 4:
+                bookSearchByISBN();
+                break;
+            case 5:
+                return;
         }
-        
     }
 
-    static void bookSearchByTitle()
-    {
-    	System.out.print("\tPlease enter book title: ");
-    	String searchTitle = sc.nextLine();
-    	
-    	//db call to find book by title
-    	List<Book> books = dbBookSearchByTitle(searchTitle);
-    	for (Book book : books) {
-    		book.printBook();
-    	}
-    }
-    
-	static List<Book> dbBookSearchByTitle(String searchTitle) {
-		List<Book> books = new ArrayList<>();
-		Statement stmt = null;
-		try {
-			// create query
-			stmt = dbConnection.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Book \n"
-					+ "WHERE title = "+searchTitle + " "
-					+ "OR title ILIKE %" + searchTitle + "%;");
+    static void bookSearchByTitle() {
+        System.out.print("\nPlease enter a title to search: ");
+        String searchTitle = sc.nextLine();
 
-			// Fetch each row from the result set
-			while (rs.next()) {
-				String bookID = rs.getString("bookID");
-				String title = rs.getString("title");
-				Date checkOutDate = rs.getDate("checkOutDate");
-				Date dueDate = rs.getDate("dueDate");
-				LocalDate checkOutDate2 = checkOutDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-				LocalDate dueDate2 = dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-				String format = rs.getString("format");
-				boolean isAdult = rs.getBoolean("isAdult");
-				String readLevel = rs.getString("readLevel");
-				String author = rs.getString("author");
-				String ISBN = rs.getString("ISBN");
-				String checkedOutBy = rs.getString("checkedOutBy");
-				String genreCode = rs.getString("genreCode");
-				// Assuming you have a user object
-				Book book = new Book(bookID, title, checkOutDate2, dueDate2, format, isAdult, readLevel, author,
-						ISBN, checkedOutBy, genreCode);
+        //db call to find book by title
+        HashMap<String, Books> books = dbBookSearch(1, searchTitle);
 
-				books.add(book);
-			}
-			rs.close();
-			stmt.close();
+        if(books.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
 
-		} catch (Exception e) {
+        HashMap<Integer, Book> displayOrder = generateBookDisplayOrder(books);
 
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
-			return null;
-		}
-
-		return books;
-	}
-    
-    static void bookSearchByAuthor()
-    {
-    	System.out.print("\tPlease enter book author: ");
-    	String author = sc.nextLine();
-    	
-    	//db call to find book by author
-    }
-    
-    static void bookSearchByGenre()
-    {
-    	System.out.print("\tPlease enter book genre: ");
-    	String genre = sc.nextLine();
-    	
-    	//db call to find book by genre
-    }
-    
-    static void bookSearchByISBN()
-    {
-    	System.out.print("\tPlease enter book ISBN: ");
-    	String isbn = sc.nextLine();
-    	
-    	//db call to find book by isbn
-    }
-    
-    static void movieSearchByTitle()
-    {
-    	System.out.print("\tPlease enter movie title: ");
-    	String title = sc.nextLine();
-    	
-    	//db call to find movie by title
-    }
-    
-    static void movieSearchByGenre()
-    {
-    	System.out.print("\tPlease enter movie genre: ");
-    	String genre = sc.nextLine();
-    	
-    	//db call to find book by genre
+        checkoutBook(displayOrder);
     }
 
+    static void bookSearchByAuthor() {
+        System.out.print("\nPlease enter an author to search: ");
+        String searchAuthor = sc.nextLine();
 
-//  static void harryPotter(){
-//  System.out.println("Search results for title \"Harry Potter\"");
-//  System.out.println("Enter the number before the title to checkout a book");
-//  System.out.println("\tAuthor: JK Rowling\t ISBN: 123482901-5782");
-//  System.out.println("\tGenre: Fantasy");
-//  System.out.println("\tReading Level: Children's Book");
-//  System.out.println("\tFormat: Paperback");
-//  System.out.println("\tAvailable: 1 of 12");
-//  System.out.println("\n\t2: Harry Potter and the Chamber of Secrets");
-//  System.out.println("\tAuthor: JK Rowling\t ISBN: 123482901-1293");
-//  System.out.println("\tGenre: Fantasy");
-//  System.out.println("\tReading Level: Children's Book");
-//  System.out.println("\tFormat: Paperback");
-//  System.out.println("\tAvailable: 3 of 12");
-//  System.out.println("\n\t3: Harry Potter and the Prisoner of Azkaban");
-//  System.out.println("\tAuthor: JK Rowling\t ISBN: 123482901-8912");
-//  System.out.println("\tGenre: Fantasy");
-//  System.out.println("\tReading Level: Children's Book");
-//  System.out.println("\tFormat: Paperback");
-//  System.out.println("\tAvailable: 0 of 12");
-//  sc.nextLine();
-//  System.out.println("\n\nYou are trying to checkout Harry Potter and the Chamber of Secrets. Type Y to confirm or N to cancel");
-//  sc.nextLine();
-//  System.out.println("You have successfully checked out Harry Potter and the Chamber of Secrets!");
-//}
+        //db call to find book by author
+        HashMap<String, Books> books = dbBookSearch(2, searchAuthor);
 
-    
-//  static void inception(){
-//  System.out.println("Search results for title \"Inception\"");
-//  System.out.println("Enter the number before the title to checkout a book");
-//  System.out.println("\t1: Inception");
-//  System.out.println("\tGenre: Action\tReleased: 2010");
-//  System.out.println("\tRating: PG-13");
-//  System.out.println("\tFormat: DVD");
-//  System.out.println("\tAvailable: 1 of 3");
-//  sc.nextLine();
-//  System.out.println("\n\nYou are trying to checkout Inception. Type Y to confirm or N to cancel");
-//  sc.nextLine();
-//  System.out.println("You have successfully checked out Inception!");
-//}
+        if(books.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
 
+        HashMap<Integer, Book> displayOrder = generateBookDisplayOrder(books);
 
+        checkoutBook(displayOrder);
+    }
+
+    static void bookSearchByGenre() {
+        System.out.print("\nPlease enter a genre to search: ");
+        String searchGenre = sc.nextLine();
+
+        //db call to find book by genre
+        HashMap<String, Books> books = dbBookSearch(3, searchGenre);
+
+        if(books.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
+
+        HashMap<Integer, Book> displayOrder = generateBookDisplayOrder(books);
+
+        checkoutBook(displayOrder);
+    }
+
+    static void bookSearchByISBN() {
+        System.out.print("\nPlease enter the ISBN to search: ");
+        String searchISBN = sc.nextLine();
+
+        //db call to find book by isbn
+        HashMap<String, Books> books = dbBookSearch(4, searchISBN);
+
+        if(books.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
+
+        HashMap<Integer, Book> displayOrder = generateBookDisplayOrder(books);
+
+        checkoutBook(displayOrder);
+    }
+
+    static HashMap<String, Books> dbBookSearch(int searchType, String searchItem) {
+        HashMap<String, Books> bookMap = new HashMap<>(); //string will be isbn###format
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+            String sql = "";
+            switch (searchType) {
+                case 1:
+                    sql = "SELECT * FROM Book "
+                            + "WHERE title = '" + searchItem + "' "
+                            + "OR title ILIKE '%" + searchItem + "%';";
+                    break;
+                case 2:
+                    sql = "SELECT * FROM Book "
+                            + "WHERE author = '" + searchItem + "' "
+                            + "OR author ILIKE '%" + searchItem + "%';";
+                    break;
+                case 3:
+                    sql = "SELECT * FROM Book " +
+                            "NATURAL JOIN Genre " +
+                            "WHERE type ILIKE '" + searchItem + "';";
+                    break;
+                case 4:
+                    sql = "SELECT * FROM Book "
+                            + "WHERE ISBN = '" + searchItem + "';";
+                    break;
+            }
+            ResultSet rs = stmt.executeQuery(sql);
+
+            // Fetch each row from the result set
+            while (rs.next()) {
+                String bookID = rs.getString("bookID");
+                String title = rs.getString("title");
+                java.sql.Date checkOutDate = rs.getDate("checkOutDate");
+                java.sql.Date dueDate = rs.getDate("dueDate");
+                LocalDate checkOutDate2 = (checkOutDate == null) ? null : checkOutDate.toLocalDate();
+                LocalDate dueDate2 = (dueDate == null) ? null : dueDate.toLocalDate();
+                String format = rs.getString("format");
+                boolean isAdult = rs.getBoolean("isAdult");
+                String readLevel = rs.getString("readLevel");
+                String author = rs.getString("author");
+                String ISBN = rs.getString("ISBN");
+                long checkedOutBy = rs.getLong("checkedOutBy");
+                String genreCode = rs.getString("genreCode");
+                // Assuming you have a user object
+                Book book = new Book(bookID, title, checkOutDate2, dueDate2, format, isAdult, readLevel, author,
+                        ISBN, checkedOutBy, genreCode);
+
+                String keyStr = ISBN + "###" + format;
+                if(bookMap.containsKey(keyStr)){
+                    bookMap.get(keyStr).addBook();
+                    if(checkOutDate != null)
+                        bookMap.get(keyStr).addCheckedOut();
+                }
+                else{
+                    bookMap.put(keyStr, new Books(book));
+                    if(checkOutDate != null)
+                        bookMap.get(keyStr).addCheckedOut();
+                }
+            }
+            rs.close();
+            stmt.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            return null;
+        }
+
+        return bookMap;
+    }
+
+    static HashMap<Integer, Book> generateBookDisplayOrder(HashMap<String, Books> books){
+        HashMap<Integer, Book> displayOrder = new HashMap<>();
+
+        int index = 1;
+        for(Map.Entry<String, Books> entry : books.entrySet()){
+            Books copies = entry.getValue();
+            Book book = copies.getBook();
+            System.out.println("\nBook " + index + ":");
+            book.printBook();
+            int total = copies.getNumBooks();
+            int checkedOut = copies.getNumCheckedOut();
+            int available = total - checkedOut;
+            System.out.println(available + " of " + total + " copies available.");
+
+            displayOrder.put(index++, book);
+        }
+
+        return displayOrder;
+    }
+
+    static void checkoutBook(HashMap<Integer, Book> books){
+        System.out.println("Enter the number of the book you want to check out, or 'q' if you want to go back.");
+        String input = sc.nextLine();
+        try{
+            int toCheckout = Integer.parseInt(input);
+            Book book = books.get(toCheckout);
+            int userAge = signedInUser.getAge();
+            boolean isAdult = book.getIsAdult();
+            if(isAdult && userAge < 18){
+                System.out.println("You must be at least 18 to check out " + book.getTitle());
+                return;
+            }
+
+            dbCheckoutBook(book);
+
+            System.out.println("You have successfully checked out '" + book.getTitle() + "'.");
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
+            java.util.Date date = calendar.getTime();
+            System.out.println("It is due on " + date);
+        }
+        catch(NumberFormatException e){
+            //user did not enter a number and wants to go back, do nothing
+        }
+    }
+
+    static void dbCheckoutBook(Book book){
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Book " +
+                    "WHERE ISBN = '" + book.getISBN() +
+                    "' AND FORMAT = '" + book.getFormat() +
+                    "' AND checkedOutBy IS NULL;");
+
+            String bookID = null;
+            while (rs.next()) {
+                bookID = rs.getString("bookID");
+                break; //check out first available book
+            }
+            rs.close();
+
+            String sql = "UPDATE Book SET checkedOutBy = '" + signedInUser.getCardNumber() +
+                    "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
+                    " WHERE bookID = '" + bookID + "';";
+            stmt.executeUpdate(sql);
+            stmt.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
+    static void movieSearchByTitle() {
+        System.out.print("\nPlease enter a title to search: ");
+        String searchTitle = sc.nextLine();
+
+        //db call to find book by title
+        HashMap<String, Movies> movies = dbMovieSearch(1, searchTitle);
+
+        if(movies.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
+
+        HashMap<Integer, Movie> displayOrder = generateMovieDisplayOrder(movies);
+
+        checkoutMovie(displayOrder);
+    }
+
+    static void movieSearchByGenre() {
+        System.out.print("\nPlease enter a genre to search: ");
+        String searchGenre = sc.nextLine();
+
+        //db call to find book by title
+        HashMap<String, Movies> movies = dbMovieSearch(2, searchGenre);
+
+        if(movies.isEmpty()){
+            System.out.println("No results found.");
+            return;
+        }
+
+        HashMap<Integer, Movie> displayOrder = generateMovieDisplayOrder(movies);
+
+        checkoutMovie(displayOrder);
+    }
+
+    static HashMap<String, Movies> dbMovieSearch(int searchType, String searchItem) {
+        HashMap<String, Movies> movieMap = new HashMap<>(); //string will be title###format
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+            String sql = "";
+            switch (searchType) {
+                case 1:
+                    sql = "SELECT * FROM Movie "
+                            + "WHERE title = '" + searchItem + "' "
+                            + "OR title ILIKE '%" + searchItem + "%';";
+                    break;
+                case 2:
+                    sql = "SELECT * FROM Movie " +
+                            "NATURAL JOIN Genre " +
+                            "WHERE type ILIKE '" + searchItem + "';";
+                    break;
+            }
+            ResultSet rs = stmt.executeQuery(sql);
+
+            // Fetch each row from the result set
+            while (rs.next()) {
+                String movieID = rs.getString("movieID");
+                String title = rs.getString("title");
+                java.sql.Date checkOutDate = rs.getDate("checkOutDate");
+                java.sql.Date dueDate = rs.getDate("dueDate");
+                LocalDate checkOutDate2 = (checkOutDate == null) ? null : checkOutDate.toLocalDate();
+                LocalDate dueDate2 = (dueDate == null) ? null : dueDate.toLocalDate();
+                String format = rs.getString("format");
+                boolean isAdult = rs.getBoolean("isAdult");
+                int year = rs.getInt("year");
+                String rating = rs.getString("rating");
+                long checkedOutBy = rs.getLong("checkedOutBy");
+                String genreCode = rs.getString("genreCode");
+                // Assuming you have a user object
+                Movie movie = new Movie(movieID, title, checkOutDate2, dueDate2, format, isAdult, year, rating, checkedOutBy, genreCode);
+
+                String keyStr = title + "###" + format;
+                if(movieMap.containsKey(keyStr)){
+                    movieMap.get(keyStr).addMovie();
+                    if(checkOutDate != null)
+                        movieMap.get(keyStr).addCheckedOut();
+                }
+                else{
+                    movieMap.put(keyStr, new Movies(movie));
+                    if(checkOutDate != null)
+                        movieMap.get(keyStr).addCheckedOut();
+                }
+            }
+            rs.close();
+            stmt.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            return null;
+        }
+
+        return movieMap;
+    }
+
+    static HashMap<Integer, Movie> generateMovieDisplayOrder(HashMap<String, Movies> movies){
+        HashMap<Integer, Movie> displayOrder = new HashMap<>();
+
+        int index = 1;
+        for(Map.Entry<String, Movies> entry : movies.entrySet()){
+            Movies copies = entry.getValue();
+            Movie movie = copies.getMovie();
+            System.out.println("\nMovie " + index + ":");
+            movie.printMovie();
+            int total = copies.getNumMovies();
+            int checkedOut = copies.getNumCheckedOut();
+            int available = total - checkedOut;
+            System.out.println(available + " of " + total + " copies available.");
+
+            displayOrder.put(index++, movie);
+        }
+
+        return displayOrder;
+    }
+
+    static void checkoutMovie(HashMap<Integer, Movie> movies){
+        System.out.println("Enter the number of the movie you want to check out, or 'q' if you want to go back.");
+        String input = sc.nextLine();
+        try{
+            int toCheckout = Integer.parseInt(input);
+            Movie movie = movies.get(toCheckout);
+            int userAge = signedInUser.getAge();
+            String rating = movie.getRating();
+            if((rating.equals("R") || rating.equals("NC-17")) && userAge < 17){
+                System.out.println("You must be at least 17 to check out " + movie.getTitle());
+                return;
+            }
+
+            dbCheckoutMovie(movie);
+
+            System.out.println("You have successfully checked out '" + movie.getTitle() + "'.");
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
+            java.util.Date date = calendar.getTime();
+            System.out.println("It is due on " + date);
+        }
+        catch(NumberFormatException e){
+            //user did not enter a number and wants to go back, do nothing
+        }
+    }
+
+    static void dbCheckoutMovie(Movie movie){
+        Statement stmt = null;
+
+        try {
+            // create query
+            stmt = dbConnection.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Movie " +
+                    "WHERE title = '" + movie.getTitle() +
+                    "' AND format = '" + movie.getFormat() +
+                    "' AND checkedOutBy IS NULL;");
+
+            String movieID = null;
+            while (rs.next()) {
+                movieID = rs.getString("movieID");
+                break; //check out first available movie
+            }
+            rs.close();
+
+            String sql = "UPDATE Movie SET checkedOutBy = '" + signedInUser.getCardNumber() +
+                    "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
+                    " WHERE movieID = '" + movieID + "';";
+            stmt.executeUpdate(sql);
+            stmt.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
 }

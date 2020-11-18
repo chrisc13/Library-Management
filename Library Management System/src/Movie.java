@@ -10,15 +10,19 @@ public class Movie {
 	private int year;
 	private String rating;
 	//fk to Card.cardNumber
-	private String checkedOutBy;
+	private long checkedOutBy;
 	//fk to Genre
 	private String genreCode;
-	
-	public Movie() {}
+
+	public Movie(String movieID, String title, LocalDate checkOutDate, LocalDate dueDate){
+		this.movieID = movieID;
+		this.title = title;
+		this.checkOutDate = checkOutDate;
+		this.dueDate = dueDate;
+	}
 	
 	public Movie(String movieID, String title, LocalDate checkOutDate, LocalDate dueDate, String format, boolean isAdult,
-			int year, String rating, String checkedOutBy, String genreCode) {
-		super();
+			int year, String rating, long checkedOutBy, String genreCode) {
 		this.movieID = movieID;
 		this.title = title;
 		this.checkOutDate = checkOutDate;
@@ -79,10 +83,10 @@ public class Movie {
 	public void setRating(String rating) {
 		this.rating = rating;
 	}
-	public String getCheckedOutBy() {
+	public long getCheckedOutBy() {
 		return checkedOutBy;
 	}
-	public void setCheckedOutBy(String checkedOutBy) {
+	public void setCheckedOutBy(long checkedOutBy) {
 		this.checkedOutBy = checkedOutBy;
 	}
 	public String getGenreCode() {
@@ -92,7 +96,10 @@ public class Movie {
 		this.genreCode = genreCode;
 	}
 	
-	
-	
-	
+	public void printMovie(){
+		System.out.println("Title: " + this.title);
+		System.out.println("Released: " + this.year );
+		System.out.println("Rating: " + this.rating);
+		System.out.println("Format: " + this.format);
+	}
 }

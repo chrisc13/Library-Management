@@ -12,10 +12,17 @@ public class Book {
 	private String readLevel;
 	private String author;
 	private String ISBN;
-	private String checkedOutBy;
+	private long checkedOutBy;
 	private String genreCode;
 	
-	public Book(String bookID, String title, LocalDate checkOutDate, LocalDate dueDate, String format, Boolean isAdult, String readLevel, String author, String ISBN, String checkedOutBy, String genreCode)
+	public Book(String bookID, String title, LocalDate checkOutDate, LocalDate dueDate){
+	    this.bookID = bookID;
+	    this.title = title;
+	    this.checkOutDate = checkOutDate;
+	    this.dueDate = dueDate;
+    }
+
+	public Book(String bookID, String title, LocalDate checkOutDate, LocalDate dueDate, String format, Boolean isAdult, String readLevel, String author, String ISBN, long checkedOutBy, String genreCode)
 	{
 		this.bookID = bookID;
 		this.title = title;
@@ -29,6 +36,7 @@ public class Book {
 		this.checkedOutBy = checkedOutBy;
 		this.genreCode = genreCode;
 	}
+
 	public String getBookID() {
 		return this.bookID;
 	}
@@ -57,7 +65,7 @@ public class Book {
     public String getISBN() {
         return ISBN;
     }
-    public String getCheckedOutBy() {
+    public long getCheckedOutBy() {
         return checkedOutBy;
     }
     public String getGenreCode() {
@@ -69,18 +77,17 @@ public class Book {
     public void setCheckOutDate(LocalDate newCheckOutDate) {
         checkOutDate = newCheckOutDate;
     }
-    public void setCheckedOutBy(String newCheckedOutBy) {
+    public void setCheckedOutBy(long newCheckedOutBy) {
         checkedOutBy = newCheckedOutBy;
     }
     
     public void printBook() {
-    	System.out.println("Book Title: "+this.title);
-    	System.out.println("Book Author: "+this.author);
-    	System.out.println("Book Format: "+this.format);
-    	System.out.println("Book Adult: "+this.isAdult);
-    	System.out.println("Book Reading Level: "+this.readLevel);
-    	System.out.println("Book ISBN: "+this.ISBN);
-    	
+    	System.out.println("Title: "+this.title);
+    	System.out.println("Author: "+this.author);
+    	System.out.println("Format: "+this.format);
+    	System.out.println("Adult: "+this.isAdult);
+    	System.out.println("Reading Level: "+this.readLevel);
+    	System.out.println("ISBN: "+this.ISBN);
     }
 
 }
