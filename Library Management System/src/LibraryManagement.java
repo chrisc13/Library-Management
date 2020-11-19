@@ -1,13 +1,10 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Date;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 
 public class LibraryManagement {
@@ -15,6 +12,8 @@ public class LibraryManagement {
     static Connection dbConnection = null;
 
     public static Cardholder signedInUser = null; //the card number of the user that is signed in
+    public static boolean outOfStock = false;
+
 
     public static void main(String[] args) {
         // TODO Auto-generated method stub
@@ -91,34 +90,41 @@ public class LibraryManagement {
             System.out.println("5. Delete your account");
             System.out.println("6. Logout");
 
-            int input = sc.nextInt();
-            sc.nextLine();
+            String inputstring = sc.nextLine();
+            // sc.nextLine();
+            try {
+                int input = Integer.parseInt(inputstring);
 
-            switch (input) {
-                case 1:
-                    bookSearch();
-                    break;
-                case 2:
-                    movieSearch();
-                    break;
-                case 3:
-                    returnBook();
-                    break;
-                case 4:
-                    returnMovie();
-                    break;
-                case 5:
-                    if(deleteAccount())
+
+                switch (input) {
+                    case 1:
+                        bookSearch();
+                        break;
+                    case 2:
+                        movieSearch();
+                        break;
+                    case 3:
+                        returnBook();
+                        break;
+                    case 4:
+                        returnMovie();
+                        break;
+                    case 5:
+                        if (deleteAccount())
+                            running = false;
+                        break;
+                    case 6:
+                        logout();
                         running = false;
-                    break;
-                case 6:
-                    logout();
-                    running = false;
-                    break;
-                default:
-                    System.out.println("Invalid input.");
-                    break;
+                        break;
+                    default:
+                        System.out.println("Invalid input.");
+                        break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input.");
             }
+
 
         } while (running);
 
@@ -279,10 +285,17 @@ public class LibraryManagement {
         String input = sc.nextLine();
         try {
             int toReturn = Integer.parseInt(input) - 1;
-            Book book = checkedOutBooks.get(toReturn);
-            dbReturnBook(book);
+            //Added if statement, invalid input output message, returnBook() call, and removed returned book output as it repeats
+            if (toReturn >= checkedOutBooks.size() || toReturn < 0) {
+                System.out.println("Invalid input. You have only checked out " + checkedOutBooks.size() + " books.");
+                returnBook();
+            } else {
+                Book book = checkedOutBooks.get(toReturn);
+                dbReturnBook(book);
 
-            System.out.println("You have successfully returned " + book.getTitle() + ".");
+                // System.out.println("You have successfully returned " + book.getTitle() + ".");
+            }
+
         } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
@@ -328,10 +341,17 @@ public class LibraryManagement {
         String input = sc.nextLine();
         try {
             int toReturn = Integer.parseInt(input) - 1;
-            Movie movie = checkedOutMovies.get(toReturn);
-            dbReturnMovie(movie);
+            //Added check if number is valid for a return. commented out message as it repeats
+            if (toReturn >= checkedOutMovies.size() || toReturn < 0) {
+                System.out.println("Invalid input. You have only checked out " + checkedOutMovies.size() + " movies.");
+                returnMovie();
+            } else {
+                Movie movie = checkedOutMovies.get(toReturn);
+                dbReturnMovie(movie);
+            }
 
-            System.out.println("You have successfully returned " + movie.getTitle() + ".");
+
+            // System.out.println("You have successfully returned " + movie.getTitle() + ".");
         } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
@@ -376,8 +396,8 @@ public class LibraryManagement {
             while (rs.next()) {
                 String bookID = rs.getString("bookID");
                 String title = rs.getString("title");
-                LocalDate checkOutDate = ((java.sql.Date) rs.getDate("checkOutDate")).toLocalDate();
-                LocalDate dueDate = ((java.sql.Date) rs.getDate("dueDate")).toLocalDate();
+                LocalDate checkOutDate = rs.getDate("checkOutDate").toLocalDate();
+                LocalDate dueDate = rs.getDate("dueDate").toLocalDate();
 
                 books.add(new Book(bookID, title, checkOutDate, dueDate));
             }
@@ -412,8 +432,8 @@ public class LibraryManagement {
             while (rs.next()) {
                 String movieID = rs.getString("movieID");
                 String title = rs.getString("title");
-                LocalDate checkOutDate = ((java.sql.Date) rs.getDate("checkOutDate")).toLocalDate();
-                LocalDate dueDate = ((java.sql.Date) rs.getDate("dueDate")).toLocalDate();
+                LocalDate checkOutDate = rs.getDate("checkOutDate").toLocalDate();
+                LocalDate dueDate = rs.getDate("dueDate").toLocalDate();
 
                 movies.add(new Movie(movieID, title, checkOutDate, dueDate));
             }
@@ -433,19 +453,35 @@ public class LibraryManagement {
         System.out.println("\t1) Search by title");
         System.out.println("\t2) Search by genre");
         System.out.println("\t3) Go back");
-        int choice = sc.nextInt();
-        sc.nextLine();
-        switch (choice) {
-            case 1:
-                movieSearchByTitle();
-                break;
-            case 2:
-                movieSearchByGenre();
-                break;
-            case 3:
-                return;
 
+        String choiceString = sc.nextLine();
+        try {
+            int choice = Integer.parseInt(choiceString);
+            switch (choice) {
+                case 1:
+                    movieSearchByTitle();
+                    break;
+                case 2:
+                    movieSearchByGenre();
+                    break;
+                case 3:
+                    return;
+
+
+                default:
+                    System.out.println("Invalid input.");
+                    movieSearch();
+                    break;
+
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+            movieSearch();
         }
+        // int choice = sc.nextInt();
+
+        // sc.nextLine();
+
     }
 
     static void bookSearch() {
@@ -455,24 +491,39 @@ public class LibraryManagement {
         System.out.println("\t3) Search by genre");
         System.out.println("\t4) Search by ISBN-13");
         System.out.println("\t5) Go back");
-        int choice = sc.nextInt();
-        sc.nextLine();
-        switch (choice) {
-            case 1:
-                bookSearchByTitle();
-                break;
-            case 2:
-                bookSearchByAuthor();
-                break;
-            case 3:
-                bookSearchByGenre();
-                break;
-            case 4:
-                bookSearchByISBN();
-                break;
-            case 5:
-                return;
+
+        String choiceString = sc.nextLine();
+        try {
+            int choice = Integer.parseInt(choiceString);
+            switch (choice) {
+                case 1:
+                    bookSearchByTitle();
+                    break;
+                case 2:
+                    bookSearchByAuthor();
+                    break;
+                case 3:
+                    bookSearchByGenre();
+                    break;
+                case 4:
+                    bookSearchByISBN();
+                    break;
+                case 5:
+                    return;
+                default:
+                    System.out.println("Invalid input.");
+                    bookSearch();
+                    break;
+            }
+
+
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+            bookSearch();
         }
+        //int choice = sc.nextInt();
+        //sc.nextLine();
+
     }
 
     static void bookSearchByTitle() {
@@ -643,23 +694,36 @@ public class LibraryManagement {
         System.out.println("Enter the number of the book you want to check out, or 'q' if you want to go back.");
         String input = sc.nextLine();
         try {
+
             int toCheckout = Integer.parseInt(input);
-            Book book = books.get(toCheckout);
-            int userAge = signedInUser.getAge();
-            boolean isAdult = book.getIsAdult();
-            if (isAdult && userAge < 18) {
-                System.out.println("You must be at least 18 to check out " + book.getTitle());
-                return;
+            //Added to check for invalid number of book to check out not sure how to loop this part of the list?
+            if (toCheckout > books.size() || toCheckout <= 0) {
+                System.out.println("Invalid input. You must select a book from the list.");
+
+            } else {
+                Book book = books.get(toCheckout);
+                int userAge = signedInUser.getAge();
+                boolean isAdult = book.getIsAdult();
+                if (isAdult && userAge < 18) {
+                    System.out.println("You must be at least 18 to check out " + book.getTitle());
+                    return;
+                }
+
+                dbCheckoutBook(book);
+
+                if (outOfStock == false) {
+                    System.out.println("You have successfully checked out '" + book.getTitle() + "'.");
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
+                    java.util.Date date = calendar.getTime();
+                    DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
+                    System.out.println("It is due on " + dFormat.format(date) + "\n");
+                } else {
+                    outOfStock = false;
+                }
+
             }
 
-            dbCheckoutBook(book);
-
-            System.out.println("You have successfully checked out '" + book.getTitle() + "'.");
-            Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
-            java.util.Date date = calendar.getTime();
-            DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
-            System.out.println("It is due on " + dFormat.format(date) + "\n");
         } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
@@ -683,11 +747,17 @@ public class LibraryManagement {
             }
             rs.close();
 
-            String sql = "UPDATE Book SET checkedOutBy = '" + signedInUser.getCardNumber() +
-                    "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
-                    " WHERE bookID = '" + bookID + "';";
-            stmt.executeUpdate(sql);
-            stmt.close();
+            if (bookID == null) {
+                System.out.println("That book is not available to be checked out. Please search for another book.\n");
+                outOfStock = true;
+            } else {
+                String sql = "UPDATE Book SET checkedOutBy = '" + signedInUser.getCardNumber() +
+                        "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
+                        " WHERE bookID = '" + bookID + "';";
+                stmt.executeUpdate(sql);
+                stmt.close();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
@@ -817,23 +887,33 @@ public class LibraryManagement {
         System.out.println("Enter the number of the movie you want to check out, or 'q' if you want to go back.");
         String input = sc.nextLine();
         try {
+
             int toCheckout = Integer.parseInt(input);
-            Movie movie = movies.get(toCheckout);
-            int userAge = signedInUser.getAge();
-            String rating = movie.getRating();
-            if ((rating.equals("R") || rating.equals("NC-17")) && userAge < 17) {
-                System.out.println("You must be at least 17 to check out " + movie.getTitle());
-                return;
+            if (toCheckout > movies.size() || toCheckout <= 0) {
+                System.out.println("Invalid input. You must select one of the movies from the list.");
+            } else {
+                Movie movie = movies.get(toCheckout);
+                int userAge = signedInUser.getAge();
+                String rating = movie.getRating();
+                if ((rating.equals("R") || rating.equals("NC-17")) && userAge < 17) {
+                    System.out.println("You must be at least 17 to check out " + movie.getTitle());
+                    return;
+                }
+
+                dbCheckoutMovie(movie);
+                if (outOfStock == false) {
+                    System.out.println("You have successfully checked out '" + movie.getTitle() + "'.");
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
+                    java.util.Date date = calendar.getTime();
+                    DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
+                    System.out.println("It is due on " + dFormat.format(date) + "\n");
+                } else {
+                    outOfStock = false;
+                }
+
             }
 
-            dbCheckoutMovie(movie);
-
-            System.out.println("You have successfully checked out '" + movie.getTitle() + "'.");
-            Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.DAY_OF_YEAR, 14); //add 14 days to the current day
-            java.util.Date date = calendar.getTime();
-            DateFormat dFormat = new SimpleDateFormat("yyyy/MM/dd");
-            System.out.println("It is due on " + dFormat.format(date) + "\n");
         } catch (NumberFormatException e) {
             //user did not enter a number and wants to go back, do nothing
         }
@@ -857,11 +937,17 @@ public class LibraryManagement {
             }
             rs.close();
 
-            String sql = "UPDATE Movie SET checkedOutBy = '" + signedInUser.getCardNumber() +
-                    "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
-                    " WHERE movieID = '" + movieID + "';";
-            stmt.executeUpdate(sql);
-            stmt.close();
+            if (movieID == null) {
+                System.out.println("That movie is not available to be checked out. Please search for another movie.\n");
+                outOfStock = true;
+            } else {
+                String sql = "UPDATE Movie SET checkedOutBy = '" + signedInUser.getCardNumber() +
+                        "', checkOutDate = NOW(), dueDate = NOW() + INTERVAL '2 week'" +
+                        " WHERE movieID = '" + movieID + "';";
+                stmt.executeUpdate(sql);
+                stmt.close();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
@@ -973,12 +1059,11 @@ public class LibraryManagement {
         try {
             int choice = Integer.parseInt(input);
             if (choice == 1) {
-                if(deleteAccountDB()){
+                if (deleteAccountDB()) {
                     System.out.println("Your account has been deleted and all items have been returned.");
                     signedInUser = null;
                     deleted = true;
-                }
-                else {
+                } else {
                     System.out.println("Something went wrong. Your account has not been deleted. Try again later.");
                 }
             }
